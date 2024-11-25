@@ -2,10 +2,10 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import * as bcrypt from "bcryptjs";
 
-
-const prisma = new PrismaClient();
+const prisma = global.prisma || new PrismaClient();
+if (process.env.NODE_ENV === "development") global.prisma = prisma;
 
 export default NextAuth({
   providers: [
@@ -15,18 +15,16 @@ export default NextAuth({
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (credentials) => {
+      async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           throw new Error("Missing username or password");
         }
 
         try {
-          // Fetch user from the database
           const user = await prisma.user.findUnique({
             where: { username: credentials.username },
           });
 
-          // Validate password using bcrypt
           if (user && (await bcrypt.compare(credentials.password, user.password))) {
             return { id: user.id, name: user.username, email: user.email };
           }
@@ -64,5 +62,5 @@ export default NextAuth({
       return token;
     },
   },
-  debug: process.env.NODE_ENV === "development", // Enable debug logging in development
+  debug: process.env.NODE_ENV === "development",
 });

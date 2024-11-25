@@ -7,6 +7,7 @@ const Favorites = () => {
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
+        // Change this to use the correct route: /api/cities
         const response = await fetch("/api/cities");
         const data = await response.json();
         setFavorites(data);
@@ -14,9 +15,10 @@ const Favorites = () => {
         console.error("Error fetching favorite cities:", err);
       }
     };
-
+  
     fetchFavorites();
   }, []);
+  
 
   const handleDelete = async (cityId) => {
     try {

@@ -15,28 +15,35 @@ export default NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        if (!credentials?.username || !credentials?.password) {
-          throw new Error("Username and password must be provided");
+        try {
+          if (!credentials?.username || !credentials?.password) {
+            throw new Error("Please enter both username and password.");
+          }
+      
+          const user = await prisma.user.findUnique({
+            where: { username: credentials.username },
+          });
+      
+          if (!user) {
+            throw new Error("No account found with that username.");
+          }
+      
+          const isValidPassword = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+      
+          if (!isValidPassword) {
+            throw new Error("Invalid username or password.");
+          }
+      
+          return { id: user.id, name: user.username, email: user.email };
+        } catch (error) {
+          console.error("Error in authorize function:", error.message);
+          throw new Error(error.message || "Authentication failed.");
         }
-
-        // Fetch user from database
-        const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
-        });
-
-        if (!user) {
-          throw new Error("No user found with this username");
-        }
-
-        // Validate password
-        const isValid = bcrypt.compareSync(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error("Invalid password");
-        }
-
-        // Return user object
-        return { id: user.id, name: user.username, email: user.email };
       },
+      
     }),
   ],
   session: {
@@ -64,12 +71,7 @@ export default NextAuth({
   },
   debug: process.env.NODE_ENV === "development",
   pages: {
-    signIn: "/login", // Redirect to /login when not authenticated
-    error: "/login",  // Redirect to /login for errors
-    newUser: "/welcome", // Optional: Redirect new users here after registration
+    signIn: "/login", // Redirect here if not authenticated
+    error: "/login",  // Display friendly error messages on login page
   },
 });
-
-
-console.log("Authorize credentials:", credentials);
-console.log("User fetched from database:", user);
