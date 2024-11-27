@@ -1,61 +1,44 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const containerStyle = {
   width: "100%",
   height: "400px",
 };
 
-const center = {
-  lat: 37.7749, // Example latitude
-  lng: -122.4194, // Example longitude
+const defaultCenter = {
+  lat: 37.7749,
+  lng: -122.4194,
 };
 
-const Map = ({ onAddFavorite }) => {
+// Define the libraries array as a constant
+const libraries = ["places"];
+
+const Map = ({ city }) => {
   const [map, setMap] = useState(null);
-  const [autocomplete, setAutocomplete] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(null);
 
-  const onLoad = (mapInstance) => setMap(mapInstance);
-
-  const onAutocompleteLoad = (autocompleteInstance) => setAutocomplete(autocompleteInstance);
-
-  const onPlaceChanged = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      if (place.geometry) {
-        const city = {
-          name: place.name,
-          lat: place.geometry.location.lat(),
-          lon: place.geometry.location.lng(),
-        };
-        setSelectedCity(city);
-        map.panTo(city); // Center the map on the selected city
-      }
-    }
+  const onLoad = (mapInstance) => {
+    setMap(mapInstance);
   };
 
+  // Update map position and add marker when `city` changes
+  useEffect(() => {
+    if (city && map) {
+      map.panTo({ lat: city.lat, lng: city.lon }); // Center map on the city
+      map.setZoom(12); // Adjust zoom level
+    }
+  }, [city, map]);
+
   return (
-    <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} libraries={["places"]}>
-      <div>
-        <input
-          type="text"
-          placeholder="Search for a city"
-          id="autocomplete"
-          style={{ width: "300px", padding: "10px" }}
-        />
-        {selectedCity && (
-          <div>
-            <p>
-              Selected: {selectedCity.name} ({selectedCity.lat}, {selectedCity.lon})
-            </p>
-            <button onClick={() => onAddFavorite(selectedCity)}>Add to Favorites</button>
-          </div>
-        )}
-        <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={10} onLoad={onLoad}>
-          {selectedCity && <Marker position={{ lat: selectedCity.lat, lng: selectedCity.lon }} />}
-        </GoogleMap>
-      </div>
+    <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY} libraries={libraries}>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={city ? { lat: city.lat, lng: city.lon } : defaultCenter}
+        zoom={10}
+        onLoad={onLoad}
+      >
+        {city && <Marker position={{ lat: city.lat, lng: city.lon }} />}
+      </GoogleMap>
     </LoadScript>
   );
 };

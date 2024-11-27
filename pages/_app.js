@@ -1,11 +1,10 @@
 import { SessionProvider } from "next-auth/react";  // Import SessionProvider
-import "../styles/globals.css";
-import Navbar from "@/components/Navbar";
+import "../styles/globals.css";  // Import your global styles
+import Navbar from "@/components/Navbar";  // Your Navbar component
 
 function MyApp({ Component, pageProps }) {
   return (
-    // Wrap your app with SessionProvider to provide session context
-    <SessionProvider session={pageProps.session}>
+    <SessionProvider session={pageProps.session}> {/* Keep SessionProvider for NextAuth */}
       <Navbar />
       <Component {...pageProps} />
     </SessionProvider>

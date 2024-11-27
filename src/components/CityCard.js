@@ -1,39 +1,31 @@
-import { Box, Text, Button, Flex } from "@chakra-ui/react";
-
-export default function CityCard({ name, country, lat, lon, onView, onDelete }) {
+export default function CityCard({ name, country, lat, lon, onDelete }) {
   return (
-    <Box
-      borderWidth="1px"
-      borderRadius="lg"
-      overflow="hidden"
-      p={5}
-      shadow="md"
-      bg="white"
-    >
-      <Text fontSize="xl" fontWeight="bold" color="teal.600">
+    <div className="border border-gray-300 rounded-lg p-5 shadow-md bg-white">
+      <p className="text-xl font-bold text-teal-600">
         {name}, {country}
-      </Text>
-      <Text mt={2}>Latitude: {lat}</Text>
-      <Text>Longitude: {lon}</Text>
+      </p>
+      <p className="mt-2">Latitude: {lat}</p>
+      <p>Longitude: {lon}</p>
 
-      <Flex mt={4} gap={2}>
-        <Button
-          colorScheme="teal"
-          size="sm"
-          onClick={onView}
+      <div className="mt-4 flex gap-2">
+        <button
+          className="bg-teal-500 text-white px-4 py-2 rounded text-sm"
+          onClick={() => {
+            window.location.href = `/city/${name}_${lat}_${lon}`; // Redirect to city details
+          }}
         >
           View Details
-        </Button>
+        </button>
+
         {onDelete && (
-          <Button
-            colorScheme="red"
-            size="sm"
-            onClick={() => onDelete(name)}
+          <button
+            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
+            onClick={onDelete} // Handle delete from favorites
           >
             Delete
-          </Button>
+          </button>
         )}
-      </Flex>
-    </Box>
+      </div>
+    </div>
   );
 }

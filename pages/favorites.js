@@ -4,10 +4,10 @@ import CityCard from "@/components/CityCard";
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
 
+  // Fetch favorite cities from the database
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        // Change this to use the correct route: /api/cities
         const response = await fetch("/api/cities");
         const data = await response.json();
         setFavorites(data);
@@ -15,11 +15,10 @@ const Favorites = () => {
         console.error("Error fetching favorite cities:", err);
       }
     };
-  
     fetchFavorites();
   }, []);
-  
 
+  // Handle deleting a favorite city
   const handleDelete = async (cityId) => {
     try {
       const response = await fetch(`/api/cities/${cityId}`, {
@@ -35,12 +34,19 @@ const Favorites = () => {
   };
 
   return (
-    <div>
-      <h1>Your Favorite Cities</h1>
+    <div className="p-5">
+      <h1 className="text-2xl font-bold mb-4">Your Favorite Cities</h1>
       <div className="city-list">
         {favorites.length > 0 ? (
           favorites.map((city) => (
-            <CityCard key={city.id} city={city} onDelete={handleDelete} />
+            <CityCard
+              key={city.id}
+              name={city.name}
+              country={city.country}
+              lat={city.lat}
+              lon={city.lon}
+              onDelete={() => handleDelete(city.id)}  // Pass delete function to CityCard
+            />
           ))
         ) : (
           <p>No favorite cities yet. Add some!</p>
