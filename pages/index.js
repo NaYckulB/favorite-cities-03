@@ -1,51 +1,69 @@
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import Link from "next/link";
-import { fetchCityCoordinates } from "../utils/openMeteo"; // Ensure this utility handles API errors properly
+import { fetchCityCoordinates, fetchCityWeather } from "@/utils/openMeteo"; // Ensure the import path is correct
 
 const Map = dynamic(() => import("../src/components/Map"), { ssr: false });
 
 const HomePage = () => {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState(null);
+  const [weather, setWeather] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Function to handle city search
+  const router = useRouter();
+
+  // Handle query parameters to prepopulate and trigger search
+  useEffect(() => {
+    const { name, lat, lng } = router.query;
+    if (name && lat && lng) {
+      setCity({
+        name,
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+      });
+      fetchCityWeather(parseFloat(lat), parseFloat(lng)).then(setWeather).catch(console.error);
+    }
+  }, [router.query]);
+
   const handleSearch = async () => {
     if (!query.trim()) {
       setError("Please enter a city name.");
       return;
     }
-  
+
     setLoading(true);
     setError("");
-  
+
     try {
-      const response = await fetchCityCoordinates(query); // Fetch city details
-      console.log("Search Response:", response); // Debug log
-  
-      if (response && response.coordinates) {
+      const response = await fetch(`/api/autocomplete?query=${query}`);
+      const data = await response.json();
+
+      if (data.length > 0) {
+        const suggestion = data[0];
         setCity({
-          name: response.placeName.split(",")[0], // Extract the city name
-          lat: response.coordinates[1], // Latitude
-          lon: response.coordinates[0], // Longitude
+          name: suggestion.name,
+          lat: suggestion.lat,
+          lng: suggestion.lng,
         });
-        setSuggestions([]); // Clear suggestions
+
+        const weatherData = await fetchCityWeather(suggestion.lat, suggestion.lng);
+        setWeather(weatherData);
+        setSuggestions([]);
       } else {
         setError("City not found.");
       }
     } catch (err) {
       setError("An error occurred while searching.");
-      console.error("Search Error:", err); // Log the error for debugging
+      console.error("Search Error:", err);
     } finally {
       setLoading(false);
     }
   };
-  
 
-  // Function to handle autocomplete suggestions
   const handleAutocomplete = async (e) => {
     const input = e.target.value;
     setQuery(input);
@@ -64,23 +82,17 @@ const HomePage = () => {
     }
   };
 
-  // Handle suggestion selection
-  const handleSelectSuggestion = (suggestion) => {
+  const handleSelectSuggestion = async (suggestion) => {
     setQuery(suggestion.name);
     setSuggestions([]);
     setCity({
       name: suggestion.name,
       lat: suggestion.lat,
-      lon: suggestion.lon,
+      lng: suggestion.lng,
     });
-  };
 
-  // Handle Enter key for search
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSearch();
-    }
+    const weatherData = await fetchCityWeather(suggestion.lat, suggestion.lng);
+    setWeather(weatherData);
   };
 
   return (
@@ -88,12 +100,16 @@ const HomePage = () => {
       <h1 className="text-2xl font-bold mb-4">Explore Cities</h1>
 
       <div className="mb-4">
-        {/* Search Input */}
         <input
           type="text"
           value={query}
           onChange={handleAutocomplete}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSearch();
+            }
+          }}
           placeholder="Search for a city..."
           className="p-2 border rounded w-64"
         />
@@ -110,7 +126,6 @@ const HomePage = () => {
         </button>
       </div>
 
-      {/* Suggestions Dropdown */}
       {suggestions.length > 0 && (
         <ul className="mt-2 border rounded w-64 bg-white shadow-lg">
           {suggestions.map((suggestion, index) => (
@@ -127,10 +142,8 @@ const HomePage = () => {
 
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Map Component */}
-      <Map city={city} />
+      <Map city={city} weather={weather} />
 
-      {/* Link to Favorites */}
       <Link href="/favorites" legacyBehavior>
         <a className="text-blue-500 hover:underline">Go to Favorite Cities</a>
       </Link>

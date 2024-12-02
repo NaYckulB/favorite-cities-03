@@ -1,5 +1,3 @@
-// pages/api/auth/[...nextauth].ts
-
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -32,6 +30,23 @@ export const authOptions = {
   session: {
     strategy: "jwt", // Use JWT for session management
   },
+  callbacks: {
+    async jwt({ token, user }) {
+      // Add user ID to the token on login
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Include user ID in the session
+      if (token) {
+        session.user.id = token.id;
+      }
+      return session;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET, // Ensure this is set in your .env
 };
 
 export default NextAuth(authOptions);

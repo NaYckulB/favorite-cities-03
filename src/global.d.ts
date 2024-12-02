@@ -8,7 +8,7 @@ declare global {
   namespace NextAuth {
     interface Session {
       user: {
-        id: string;
+        id: string; // User ID from Prisma
         name: string;
         email: string;
       };
@@ -19,6 +19,23 @@ declare global {
       name: string;
       email: string;
     }
+  }
+
+  // Add types for City model
+  interface City {
+    id: number;
+    name: string;
+    lat: number;
+    lon: number;
+    userId: number;
+    createdAt: string; // ISO timestamp
+  }
+
+  // API Response types
+  interface CityResponse {
+    success: boolean;
+    data?: City | City[];
+    error?: string;
   }
 }
 

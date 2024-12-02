@@ -1,5 +1,3 @@
-// /pages/api/autocomplete/index.js
-
 export default async function handler(req, res) {
   const { query } = req.query;
 
@@ -10,34 +8,61 @@ export default async function handler(req, res) {
   try {
     // Fetch city suggestions from Google Places Autocomplete API
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}&types=(cities)&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}&types=(regions)&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
     );
 
-    // Check if the response is valid
     if (!response.ok) {
       throw new Error("Error fetching data from Google Places API");
     }
 
     const data = await response.json();
-
-    // Log the response for debugging
     console.log("Autocomplete API Response:", data);
 
-    // If predictions are found, map them to a simpler format
     if (data.predictions) {
-      const suggestions = data.predictions.map((prediction) => ({
-        name: prediction.description, // The name of the city
-        lat: prediction.geometry ? prediction.geometry.location.lat : null, // Latitude (optional)
-        lon: prediction.geometry ? prediction.geometry.location.lng : null, // Longitude (optional)
-      }));
+      // Map predictions and fetch geometry details for each place
+      const suggestions = await Promise.all(
+        data.predictions.map(async (prediction) => {
+          try {
+            const placeDetailsResponse = await fetch(
+              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=geometry&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+            );
 
-      res.status(200).json(suggestions); // Return suggestions as JSON
+            if (!placeDetailsResponse.ok) {
+              throw new Error("Failed to fetch place details");
+            }
+
+            const placeDetailsData = await placeDetailsResponse.json();
+            console.log("Place Details Response:", placeDetailsData);
+
+            const lat = placeDetailsData.result?.geometry?.location?.lat || null;
+            const lng = placeDetailsData.result?.geometry?.location?.lng || null;
+
+            if (lat === null || lng === null) {
+              console.warn("Incomplete geometry data for:", prediction.description);
+              return null; // Exclude invalid entries
+            }
+
+            return {
+              name: prediction.description,
+              lat,
+              lng,
+            };
+          } catch (error) {
+            console.error("Error fetching place details:", error.message);
+            return null; // Exclude entries with errors
+          }
+        })
+      );
+
+      // Filter out null values
+      const validSuggestions = suggestions.filter((s) => s !== null);
+
+      res.status(200).json(validSuggestions);
     } else {
       res.status(200).json([]); // Return empty array if no predictions
     }
-
   } catch (error) {
-    console.error("Error fetching autocomplete data:", error);
+    console.error("Error fetching autocomplete data:", error.message);
     res.status(500).json({ error: "Error fetching city suggestions" });
   }
 }

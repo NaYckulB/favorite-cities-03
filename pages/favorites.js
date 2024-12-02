@@ -1,33 +1,45 @@
 import { useEffect, useState } from "react";
+import { deleteCity, fetchFavoriteCities } from "@/utils/cityApi";
 import CityCard from "@/components/CityCard";
+import { useRouter } from "next/router";
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
+  const router = useRouter();
 
-  // Fetch favorite cities from the database
+  // Fetch favorite cities on load
   useEffect(() => {
     const fetchFavorites = async () => {
       try {
-        const response = await fetch("/api/cities");
-        const data = await response.json();
-        setFavorites(data);
+        const cities = await fetchFavoriteCities();
+        setFavorites(cities);
       } catch (err) {
-        console.error("Error fetching favorite cities:", err);
+        console.error("Error fetching favorite cities:", err.message);
       }
     };
+
     fetchFavorites();
   }, []);
 
-  // Handle deleting a favorite city
+  const handleGoToCity = (city) => {
+    router.push({
+      pathname: "/",
+      query: {
+        name: city.name,
+        lat: city.lat,
+        lng: city.lon,
+      },
+    });
+  };
+
+  
   const handleDelete = async (cityId) => {
+    const confirmation = window.confirm("Are you sure you want to delete this Favorite City?");
+    if (!confirmation) return;
+  
     try {
-      const response = await fetch(`/api/cities/${cityId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) throw new Error("Failed to delete city");
-
-      setFavorites((prev) => prev.filter((city) => city.id !== cityId));
+      await deleteCity(cityId); // Use deleteCity utility
+      setFavorites((prev) => prev.filter((city) => city.id !== cityId)); // Update state
     } catch (err) {
       console.error("Error deleting city:", err.message);
     }
@@ -42,10 +54,10 @@ const Favorites = () => {
             <CityCard
               key={city.id}
               name={city.name}
-              country={city.country}
               lat={city.lat}
               lon={city.lon}
-              onDelete={() => handleDelete(city.id)}  // Pass delete function to CityCard
+              onGoTo={() => handleGoToCity(city)}
+              onDelete={() => handleDelete(city.id)}
             />
           ))
         ) : (

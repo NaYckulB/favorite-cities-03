@@ -1,31 +1,24 @@
-export default function CityCard({ name, country, lat, lon, onDelete }) {
+const CityCard = ({ name, lat, lon, onGoTo, onDelete }) => {
   return (
-    <div className="border border-gray-300 rounded-lg p-5 shadow-md bg-white">
-      <p className="text-xl font-bold text-teal-600">
-        {name}, {country}
-      </p>
-      <p className="mt-2">Latitude: {lat}</p>
-      <p>Longitude: {lon}</p>
-
-      <div className="mt-4 flex gap-2">
+    <div className="p-4 border rounded shadow-lg mb-2">
+      <h3 className="font-bold">{name}</h3>
+      <p>Lat: {lat}, Lon: {lon}</p>
+      <div className="flex justify-between mt-2">
         <button
-          className="bg-teal-500 text-white px-4 py-2 rounded text-sm"
-          onClick={() => {
-            window.location.href = `/city/${name}_${lat}_${lon}`; // Redirect to city details
-          }}
+          onClick={onGoTo}
+          className="bg-blue-500 text-white p-1 rounded"
         >
-          View Details
+          Go to City
         </button>
-
-        {onDelete && (
-          <button
-            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
-            onClick={onDelete} // Handle delete from favorites
-          >
-            Delete
-          </button>
-        )}
+        <button
+          onClick={onDelete}
+          className="bg-red-500 text-white p-1 rounded"
+        >
+          Delete
+        </button>
       </div>
     </div>
   );
-}
+};
+
+export default CityCard;
